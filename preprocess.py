@@ -17,6 +17,7 @@ start = datetime.datetime(2000, 1, 1)
 end = datetime.datetime(2021, 9, 1)
 df = web.DataReader('GOOGL', 'stooq', start, end)
 
+df.dropna(inplace=True)    # 删除空值
 df.sort_index(inplace=True)
 pre_days = 10
 df['label'] = df['Close'].shift(-pre_days)  # 因为凭今天及之前数据预测10天后的值，那么构造训练集时今天数据的label就对应10天后的值
@@ -34,7 +35,7 @@ print(sca_X)
 '''
 # print(sca_X)
 
-mem_his_days = 5  # 记忆天数，即通过mem天的数据去预测pre天后的数据
+mem_his_days = 10  # 记忆天数，即通过mem天的数据去预测pre天后的数据
 
 deq = deque(maxlen=mem_his_days)
 
@@ -64,6 +65,8 @@ import numpy as np
 
 X = np.array(X)  # y已经是array了
 
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 """
     构建神经网络
 """
@@ -73,4 +76,31 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, LSTM
 
 model = Sequential()
-model.add(LSTM(10, input_shape=X))
+model.add(LSTM(10, input_shape=X.shape[1:], activation='tanh', return_sequences=True))  # 为了调用cudnn加速激活函数改为tanh
+# X.shape是(4276, 5, 5), 而[1:]则是取(5, 5)
+# LSTM中的input_shape一般为二维，前一参数为时间步，后一参数为特征数，即一个数据含5天，每天的一条有5个特征，即是一个5x5的矩阵
+# return_sequences=True表示返回整个序列，而不是最后一个输出，即返回每一个时间步的输出，而不是最后一个输出
+# LSTM层的输入是一个形状为(batch_size, timesteps, input_dim)的三维张量
+# units表示输出空间的维度，即输出层的神经元个数，也即输出数据的特征数
+model.add(Dropout(0.1))
+# 第二层
+model.add(LSTM(10, input_shape=X.shape[1:], activation='tanh', return_sequences=True))  # 为了调用cudnn加速激活函数改为tanh
+model.add(Dropout(0.1))
+# 第三层
+model.add(LSTM(10, activation='tanh'))
+model.add(Dropout(0.1))
+# 全连接层
+model.add(Dense(10, activation='tanh'))
+model.add(Dropout(0.1))
+# 输出层
+model.add(Dense(1))
+
+model.compile(optimizer='adam', loss='mse', metrics=['mape'])
+'''
+    ## 编译模型
+    loss通常用来衡量模型预测值与实际值之间的差距
+    metrics用来评估模型性能
+    MeanSquaredError即均方误差
+    MeanAbsolutePercentageError即平均绝对百分比误差
+'''
+model.fit(X_train, y_train, batch_size=32, epochs=65, validation_data=(X_test, y_test))    # 开始训练
