@@ -67,6 +67,20 @@ def Stock_Price_LSTM_Data_Preprocessing(df, mem_his_days, pre_days):
     return X, y, X_lately
 
 
+# 不同超参数寻找最优模型
+mem_days = [5, 10, 15]
+lstm_layers = [1, 2, 3]
+dense_layers = [1, 2, 3]
+units = [16, 32]
+for the_mem_days in mem_days:
+    for the_lstm_layers in lstm_layers:
+        for the_dense_layers in dense_layers:
+            for the_units in units:
+                #filepath = r'D:\Git Hub Repositories\PostGraduate\Stock Prediction\Model\{:.2f}_{:02d}_mem_{}_lstm_{}_dense_{}_units_{}'.format(val_mape, epochs, the_mem_days, the_lstm_layers, the_dense_layers, the_units)
+                filepath = '{val_mape:.2f}_{epoch:02d}' + f'mem_{the_mem_days}_lstm_{the_lstm_layers}_dense_{the_dense_layers}_units_{the_units}'
+                print(filepath)
+
+
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
 """
