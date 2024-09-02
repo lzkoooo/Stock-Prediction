@@ -69,10 +69,14 @@ def Stock_Price_LSTM_Data_Preprocessing(df, mem_his_days, pre_days):
 
 # 不同超参数寻找最优模型
 pre_days = 10
-mem_days = [5, 10, 15]
-lstm_layers = [1, 2, 3]
-dense_layers = [1, 2, 3]
-units = [16, 32]
+# mem_days = [5, 10, 15]
+# lstm_layers = [1, 2, 3]
+# dense_layers = [1, 2, 3]
+# units = [16, 32]
+mem_days = [10]
+lstm_layers = [1]
+dense_layers = [1]
+units = [32]
 from tensorflow.keras.callbacks import ModelCheckpoint
 
 for the_mem_days in mem_days:
@@ -80,7 +84,7 @@ for the_mem_days in mem_days:
         for the_dense_layers in dense_layers:
             for the_units in units:
                 #filepath = r'D:\Git Hub Repositories\PostGraduate\Stock Prediction\Model\{:.2f}_{:02d}_mem_{}_lstm_{}_dense_{}_units_{}'.format(val_mape, epochs, the_mem_days, the_lstm_layers, the_dense_layers, the_units)
-                filepath = '{val_mape:.2f}_{epoch:02d}' + f'mem_{the_mem_days}_lstm_{the_lstm_layers}_dense_{the_dense_layers}_units_{the_units}'
+                filepath = 'D:\Git Hub Repositories\PostGraduate\Stock Prediction\Model\\' + '{val_mape:.2f}_{epoch:02d}' + f'mem_{the_mem_days}_lstm_{the_lstm_layers}_dense_{the_dense_layers}_units_{the_units}.h5'
                 checkpoint = ModelCheckpoint(   # 回调函数，定期检查某指标并决定是否保存该模型（模型权重）
                     filepath=filepath,
                     save_weights_only=False,    # 如果为True，则只保存模型权重，否则保存整个模型
@@ -110,14 +114,14 @@ for the_mem_days in mem_days:
                 # units表示输出空间的维度，即输出层的神经元个数，也即输出数据的特征数
                 model.add(Dropout(0.1))
                 # 第二层
-                for i in the_lstm_layers:   # the_lstm_layers是几就加循环几次加几层
+                for i in range(the_lstm_layers):   # the_lstm_layers是几就加循环几次加几层
                     model.add(LSTM(the_units, input_shape=X.shape[1:], activation='tanh', return_sequences=True))  # 为了调用cudnn加速激活函数改为tanh
                     model.add(Dropout(0.1))
                 # 第三层
                 model.add(LSTM(the_units, activation='tanh'))
                 model.add(Dropout(0.1))
                 # 全连接层
-                for i in the_dense_layers:
+                for i in range(the_dense_layers):
                     model.add(Dense(the_units, activation='tanh'))
                     model.add(Dropout(0.1))
                 # 输出层
@@ -131,4 +135,17 @@ for the_mem_days in mem_days:
                     MeanSquaredError即均方误差
                     MeanAbsolutePercentageError即平均绝对百分比误差
                 '''
-                model.fit(X_train, y_train, batch_size=32, epochs=65, validation_data=(X_test, y_test))    # 开始训练
+                model.fit(X_train, y_train, batch_size=32, epochs=65, validation_data=(X_test, y_test), callbacks=[checkpoint])
+                '''
+                    callbacks是回调函数，每次执行fit函数的时候都会自动调用
+                    在 Keras 中，callback 是一个类，它有多种形式，如 ModelCheckpoint、EarlyStopping、LearningRateScheduler等
+                '''
+
+# 加载最优模型
+from tensorflow.keras.models import load_model
+best_model = load_model('')
+best_model.summary()
+
+best_model.evaluate(X_test, y_test)
+
+# 画图
