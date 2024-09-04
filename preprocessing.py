@@ -7,12 +7,11 @@
 """
     数据预处理
 """
-
-import pandas_datareader.data as web
-import datetime
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from collections import deque
 import numpy as np
+import joblib
 
 """
 X 表示输入的特征数据
@@ -24,10 +23,8 @@ y^ 表示预测值
 
 
 def Stock_Price_LSTM_Data_Preprocessing(mem_his_days, pre_days):
-    start = datetime.datetime(2000, 1, 1)
-    end = datetime.datetime(2024, 9, 1)
-    df = web.DataReader('GOOGL', 'stooq', start, end)
 
+    df = pd.read_csv('Data/Ori_Stock_Data.csv', index_col=0)  # 读取数据
     df.dropna(inplace=True)  # 删除空值且直接替换（即在原数据上直接修改）
     df.sort_index(inplace=True)
 
@@ -38,6 +35,7 @@ def Stock_Price_LSTM_Data_Preprocessing(mem_his_days, pre_days):
 
     scaler = StandardScaler()
     sca_X = scaler.fit_transform(df.iloc[:, :-1])  # 执行标准化，不包含label！！label不用标准化
+    joblib.dump(scaler, 'scaler.pkl')   # 保存scaler
     '''
         即loc[x, y]是指按值选取
         而iloc[x, y]是指按下标选取
